@@ -161,7 +161,7 @@ void report (void)			/* Report generator function. */
     {
       avg_job_tot_delay = sampst (0.0, -(num_stations + i)) * num_tasks[i];
 	  max_job_tot_delay = sampst (-999.0, -(num_stations + i)) * num_tasks[i];
-      fprintf (outfile, "\n\n%4d%27.3f%29.3f", i, avg_job_tot_delay, max_job_tot_delay);
+      fprintf (outfile, "\n\n%4d%27.3f%29.3f", i, avg_job_tot_delay/60, max_job_tot_delay/60);
       overall_avg_job_tot_delay += (prob_distrib_job_type[i] - sum_probs) * avg_job_tot_delay;
       sum_probs = prob_distrib_job_type[i];
     }
@@ -246,6 +246,8 @@ int main ()				/* Main function. */
 		}
 		mean_service[i][num_tasks[i]] = mean_accu;
 		printf ("%.3f\n", mean_service[i][num_tasks[i]]);
+		
+		mean_accu = 0;
     }
   for (j = 1; j <= num_stations; ++j)
     {
