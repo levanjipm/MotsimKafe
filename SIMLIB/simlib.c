@@ -497,6 +497,9 @@ sampst (double value, int variable)
 	transfer[1] = 0.0;
       else
 	transfer[1] = sum[ivar] / transfer[2];
+		if (value == -999)
+			return transfer[3];
+			
       return transfer[1];
     }
 
@@ -562,6 +565,11 @@ timest (double value, int variable)
       transfer[1] = area[ivar] / (sim_time - treset);
       transfer[2] = max[ivar];
       transfer[3] = min[ivar];
+	  if (transfer[2] < 0)
+		transfer[2] = 0;
+	  if (value == -999)
+		return transfer[2];
+	  
       return transfer[1];
     }
 

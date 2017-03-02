@@ -170,21 +170,22 @@ depart (void)			/* Event function for departure of a job from a particular
 }
 
 
-void report (void)			/* Report generator function. */
+void report (void)      /* Report generator function. */
 {
   int i;
-  double overall_avg_job_tot_delay, avg_job_tot_delay, sum_probs;
+  double overall_avg_job_tot_delay, avg_job_tot_delay, sum_probs, max_job_tot_delay;
 
   /* Compute the average total delay in queue for each job type and the
      overall average job total delay. */
 
-  fprintf (outfile, "\n\n\n\nJob type     Average total delay in queue");
+  fprintf (outfile, "\n\n\n\nJob type     Average total delay in queue     Maximum total delay in queue");
   overall_avg_job_tot_delay = 0.0;
   sum_probs = 0.0;
   for (i = 1; i <= num_job_types; ++i)
     {
       avg_job_tot_delay = sampst (0.0, -(num_stations + i)) * num_tasks[i];
-      fprintf (outfile, "\n\n%4d%27.3f", i, avg_job_tot_delay);
+    max_job_tot_delay = sampst (-999.0, -(num_stations + i)) * num_tasks[i];
+      fprintf (outfile, "\n\n%4d%27.3f%29.3f", i, avg_job_tot_delay/60, max_job_tot_delay/60);
       overall_avg_job_tot_delay += (prob_distrib_job_type[i] - sum_probs) * avg_job_tot_delay;
       sum_probs = prob_distrib_job_type[i];
     }
@@ -197,6 +198,14 @@ void report (void)			/* Report generator function. */
   fprintf (outfile, "\nstation       in queue       utilization        in queue");
   for (j = 1; j <= num_stations; ++j)
     fprintf (outfile, "\n\n%4d%17.3f%17.3f%17.3f", j, filest (j), timest (0.0, -j) / num_machines[j], sampst (0.0, -j));
+  
+  /* Compute the maximum number in queue, the maximum utilization, and the
+     maximum delay in queue for each station. */
+
+  fprintf (outfile, "\n\n\n Work      Maximum number      Maximum       Maximum delay");
+  fprintf (outfile, "\nstation       in queue       utilization        in queue");
+  for (j = 1; j <= num_stations; ++j)
+    fprintf (outfile, "\n\n%4d%17.3f%17.3f%17.3f", j, timest (-999.0, -(TIM_VAR + j)), timest (-999.0, -j) / num_machines[j], sampst (-999.0, -j));
 }
 
 int main ()				/* Main function. */
