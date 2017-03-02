@@ -8,7 +8,7 @@ Number of job types                        3
 
 Number of tasks for each job type          3    3    2
 
-Distribution function of job types     0.500   0.450   0.050
+Distribution function of job types     0.850   0.950   1.000
 
 Mean interarrival time of jobs          0.50 minutes
 
@@ -36,23 +36,23 @@ Job type     Mean service time (in hours) for successive tasks
 
 Job type     Average total delay in queue
 
-   1                      0.985
+   1                      8.452
 
-   2                     25.119
+   2                      0.443
 
-   3                      0.000
+   3                      0.031
 
-Overall average job total delay =    -0.764
+Overall average job total delay =     7.230
 
 
 
  Work      Average number      Average       Average delay
 station       in queue       utilization        in queue
 
-   1            0.919            0.719            0.899
+   1           16.057            0.995            8.322
 
-   2           27.068            0.988           24.463
+   2            0.085            0.444            0.380
 
    3            0.000            0.000            0.000
 
-   4            0.109            0.440            0.069
+   4            0.116            0.470            0.074

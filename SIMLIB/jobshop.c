@@ -41,7 +41,7 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
     {
 
       event_schedule (sim_time + expon (mean_interarrival, STREAM_INTERARRIVAL), EVENT_ARRIVAL);
-      job_type = (random_integer (prob_distrib_job_type, STREAM_JOB_TYPE))%3;
+      job_type = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
       task = 1;
     }
     printf("masuk job : %d, task : %d\n", job_type, task);
