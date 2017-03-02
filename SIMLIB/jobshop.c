@@ -8,8 +8,14 @@
 				   particular station. */
 #define EVENT_END_SIMULATION  3	/* Event type for end of the simulation. */
 #define STREAM_INTERARRIVAL   1	/* Random-number stream for interarrivals. */
-#define STREAM_JOB_TYPE       2	/* Random-number stream for job types. */
-#define STREAM_SERVICE        3	/* Random-number stream for service times. */
+#define STREAM_GROUP_SIZE     2
+#define STREAM_JOB_TYPE       3	/* Random-number stream for job types. */
+#define STREAM_HOTFOOD        4	/* Random-number stream for service times. */
+#define STREAM_SANDWICH       5 /* Random-number stream for service times. */
+#define STREAM_DRINK          6 /* Random-number stream for service times. */
+#define STREAM_HOTFOOD_CT     7 /* Random-number stream for service times. */
+#define STREAM_SANDWICH_CT    8 /* Random-number stream for service times. */
+#define STREAM_DRINK_CT       9 /* Random-number stream for service times. */
 #define MAX_NUM_STATIONS      5	/* Maximum number of stations. */
 #define MAX_NUM_JOB_TYPES     3	/* Maximum number of job types. */
 
@@ -17,7 +23,8 @@
 
 int num_stations, num_job_types, i, j, num_machines[MAX_NUM_STATIONS + 1],
   num_tasks[MAX_NUM_JOB_TYPES + 1],
-  route[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1], num_machines_busy[MAX_NUM_STATIONS + 1], job_type, task;
+  num_customers, customer,
+  route[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1], num_machines_busy[MAX_NUM_STATIONS + 1], job_type[4], task[4];
 double mean_interarrival, length_simulation, prob_distrib_job_type[26],
   mean_service[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1],
   mean_accu;
@@ -41,57 +48,100 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
     {
 
       event_schedule (sim_time + expon (mean_interarrival, STREAM_INTERARRIVAL), EVENT_ARRIVAL);
-      job_type = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
-      task = 1;
-    }
-    printf("masuk job : %d, task : %d\n", job_type, task);
-    if (job_type == 2) {
-      printf("MASUK SANDWICH, TASK %d\n", task);
-    }
-  /* Determine the station from the route matrix. */
+      num_customers = random_integer (size_prob, STREAM_GROUP_SIZE);
+      printf("num cust = %d\n", num_customers);
+      for (int i=0; i<num_customers; i++) {
+        job_type[i] = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
+        task[i] = 1;
+        printf("masuk job : %d, task : %d\n", job_type[i], task[i]);
+      }
+    
+    
+    for (int i=0;i<num_customers;i++) {
+      /* Determine the station from the route matrix. */
+      station = route[job_type[i]][task[i]];
 
-  station = route[job_type][task];
+      /* Check to see whether all machines in this station are busy. */
 
-  /* Check to see whether all machines in this station are busy. */
+      if (num_machines_busy[station] == num_machines[station])
+        {
 
-  if (num_machines_busy[station] == num_machines[station])
-    {
-
-      /* All machines in this station are busy, so place the arriving job at
-         the end of the appropriate queue. Note that the following data are
-         stored in the record for each job:
-         1. Time of arrival to this station.
-         2. Job type.
-         3. Current task number. */
-         if (job_type == 2) {
-          printf("MASUK QUEUE SANDWICH, TASK %d\n", task);
+          /* All machines in this station are busy, so place the arriving job at
+             the end of the appropriate queue. Note that the following data are
+             stored in the record for each job:
+             1. Time of arrival to this station.
+             2. Job type.
+             3. Current task number. */
+          transfer[1] = sim_time;
+          transfer[2] = job_type[i];
+          transfer[3] = task[i];
+          list_file (LAST, station);
         }
-      transfer[1] = sim_time;
-      transfer[2] = job_type;
-      transfer[3] = task;
-      list_file (LAST, station);
-    }
 
+      else
+        {
+
+          /* A machine in this station is idle, so start service on the arriving
+             job (which has a delay of zero). */
+          sampst (0.0, station);	/* For station. */
+          sampst (0.0, num_stations + job_type[i]);	/* For job type. */
+          ++num_machines_busy[station];
+          timest ((double) num_machines_busy[station], station);
+
+          /* Schedule a service completion.  Note defining attributes beyond the
+             first two for the event record before invoking event_schedule. */
+
+          transfer[3] = job_type[i];
+          transfer[4] = task[i];
+          transfer[5] = i;
+          printf("%d\n", transfer[5]);
+          event_schedule (sim_time + mean_service[job_type[i]][task[i]], EVENT_DEPARTURE);
+        }
+    }
+  }
   else
-    {
+  {
+    /* Determine the station from the route matrix. */
+    if (new_job != 1)
+      printf("masuk job : %d, task bukan 1 : %d\n", job_type[customer], task[customer]);
+    station = route[job_type[customer]][task[customer]];
 
-      /* A machine in this station is idle, so start service on the arriving
-         job (which has a delay of zero). */
-      if (job_type == 2) {
-      printf("MASUK STATION SANDWICH, TASK %d\n", task);
-    }
-      sampst (0.0, station);	/* For station. */
-      sampst (0.0, num_stations + job_type);	/* For job type. */
-      ++num_machines_busy[station];
-      timest ((double) num_machines_busy[station], station);
+    /* Check to see whether all machines in this station are busy. */
 
-      /* Schedule a service completion.  Note defining attributes beyond the
-         first two for the event record before invoking event_schedule. */
+    if (num_machines_busy[station] == num_machines[station])
+      {
 
-      transfer[3] = job_type;
-      transfer[4] = task;
-      event_schedule (sim_time + erlang (2, mean_service[job_type][task], STREAM_SERVICE), EVENT_DEPARTURE);
-    }
+        /* All machines in this station are busy, so place the arriving job at
+           the end of the appropriate queue. Note that the following data are
+           stored in the record for each job:
+           1. Time of arrival to this station.
+           2. Job type.
+           3. Current task number. */
+        transfer[1] = sim_time;
+        transfer[2] = job_type[customer];
+        transfer[3] = task[customer];
+        list_file (LAST, station);
+      }
+
+    else
+      {
+
+        /* A machine in this station is idle, so start service on the arriving
+           job (which has a delay of zero). */
+        sampst (0.0, station);  /* For station. */
+        sampst (0.0, num_stations + job_type[customer]); /* For job type. */
+        ++num_machines_busy[station];
+        timest ((double) num_machines_busy[station], station);
+
+        /* Schedule a service completion.  Note defining attributes beyond the
+           first two for the event record before invoking event_schedule. */
+
+        transfer[3] = job_type[customer];
+        transfer[4] = task[customer];
+        transfer[5] = customer;
+        event_schedule (sim_time + mean_service[job_type[customer]][task[customer]], EVENT_DEPARTURE);
+      }
+  }
 }
 
 
@@ -100,62 +150,61 @@ depart (void)			/* Event function for departure of a job from a particular
 				   station. */
 {
   int station, job_type_queue, task_queue;
+  
+    /* Determine the station from which the job is departing. */
+    printf("depart cust %d\n", transfer[5]);
+    customer = transfer[5];
+    job_type[customer] = transfer[3];
+    task[customer] = transfer[4];
+    station = route[job_type[customer]][task[customer]];
 
-  /* Determine the station from which the job is departing. */
+    /* Check to see whether the queue for this station is empty. */
 
-  job_type = transfer[3];
-  task = transfer[4];
-  station = route[job_type][task];
+    if (list_size[station] == 0)
+      {
 
-  /* Check to see whether the queue for this station is empty. */
+        /* The queue for this station is empty, so make a machine in this
+           station idle. */
 
-  if (list_size[station] == 0)
-    {
+        --num_machines_busy[station];
+        timest ((double) num_machines_busy[station], station);
+      }
 
-      /* The queue for this station is empty, so make a machine in this
-         station idle. */
+    else
+      {
 
-      --num_machines_busy[station];
-      timest ((double) num_machines_busy[station], station);
-    }
+        /* The queue is nonempty, so start service on first job in queue. */
 
-  else
-    {
+        list_remove (FIRST, station);
 
-      /* The queue is nonempty, so start service on first job in queue. */
+        /* Tally this delay for this station. */
 
-      list_remove (FIRST, station);
+        sampst (sim_time - transfer[1], station);
 
-      /* Tally this delay for this station. */
+        /* Tally this same delay for this job type. */
 
-      sampst (sim_time - transfer[1], station);
+        job_type_queue = transfer[2];
+        task_queue = transfer[3];
+        sampst (sim_time - transfer[1], num_stations + job_type_queue);
 
-      /* Tally this same delay for this job type. */
+        /* Schedule end of service for this job at this station.  Note defining
+           attributes beyond the first two for the event record before invoking
+           event_schedule. */
 
-      job_type_queue = transfer[2];
-      task_queue = transfer[3];
-      sampst (sim_time - transfer[1], num_stations + job_type_queue);
+        transfer[3] = job_type_queue;
+        transfer[4] = task_queue;
+        transfer[5] = i;
+        event_schedule (sim_time + mean_service[job_type_queue][task_queue], EVENT_DEPARTURE);
+      }
 
-      /* Schedule end of service for this job at this station.  Note defining
-         attributes beyond the first two for the event record before invoking
-         event_schedule. */
-
-      transfer[3] = job_type_queue;
-      transfer[4] = task_queue;
-      event_schedule (sim_time + erlang (2, mean_service[job_type_queue][task_queue], STREAM_SERVICE), EVENT_DEPARTURE);
-    }
-    if (job_type == 2) {
-      printf("selesai depart SANDWICH, TASK %d\n", task);
-    }
-
-  /* If the current departing job has one or more tasks yet to be done, send
-     the job to the next station on its route. */
-
-  if (task < num_tasks[job_type])
-    {
-      ++task;
-      arrive (2);
-    }
+    /* If the current departing job has one or more tasks yet to be done, send
+       the job to the next station on its route. */
+    if (task[customer] < num_tasks[job_type[customer]])
+      {
+        ++task[customer];
+        arrive (2);
+      }
+  
 }
 
 
@@ -302,7 +351,7 @@ int main ()				/* Main function. */
 
   /* Set maxatr = max(maximum number of attributes per record, 4) */
 
-  maxatr = 4;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
+  maxatr = 5;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
 
   /* Schedule the arrival of the first job. */
 
