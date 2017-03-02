@@ -41,10 +41,13 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
     {
 
       event_schedule (sim_time + expon (mean_interarrival, STREAM_INTERARRIVAL), EVENT_ARRIVAL);
-      job_type = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
+      job_type = (random_integer (prob_distrib_job_type, STREAM_JOB_TYPE))%3;
       task = 1;
     }
-
+    printf("masuk job : %d, task : %d\n", job_type, task);
+    if (job_type == 2) {
+      printf("MASUK SANDWICH, TASK %d\n", task);
+    }
   /* Determine the station from the route matrix. */
 
   station = route[job_type][task];
@@ -60,7 +63,9 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
          1. Time of arrival to this station.
          2. Job type.
          3. Current task number. */
-
+         if (job_type == 2) {
+          printf("MASUK QUEUE SANDWICH, TASK %d\n", task);
+        }
       transfer[1] = sim_time;
       transfer[2] = job_type;
       transfer[3] = task;
@@ -72,7 +77,9 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
 
       /* A machine in this station is idle, so start service on the arriving
          job (which has a delay of zero). */
-
+      if (job_type == 2) {
+      printf("MASUK STATION SANDWICH, TASK %d\n", task);
+    }
       sampst (0.0, station);	/* For station. */
       sampst (0.0, num_stations + job_type);	/* For job type. */
       ++num_machines_busy[station];
@@ -136,6 +143,9 @@ depart (void)			/* Event function for departure of a job from a particular
       transfer[3] = job_type_queue;
       transfer[4] = task_queue;
       event_schedule (sim_time + erlang (2, mean_service[job_type_queue][task_queue], STREAM_SERVICE), EVENT_DEPARTURE);
+    }
+    if (job_type == 2) {
+      printf("selesai depart SANDWICH, TASK %d\n", task);
     }
 
   /* If the current departing job has one or more tasks yet to be done, send
@@ -279,6 +289,8 @@ int main ()				/* Main function. */
 	fprintf (outfile, "%9.2f", mean_service[i][j]);
     }
 
+    printf("\n========================================\n\n");
+
   /* Initialize all machines in all stations to the idle state. */
 
   for (j = 1; j <= num_stations; ++j)
@@ -303,7 +315,7 @@ int main ()				/* Main function. */
 
   /* Run the simulation until it terminates after an end-simulation event
      (type EVENT_END_SIMULATION) occurs. */
-
+printf("\naaa\n\n");
   do
     {
 
