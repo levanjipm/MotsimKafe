@@ -76,7 +76,6 @@ void serve_customer (int customer) {
     }
 }
 
-
 void arrive (int new_job)		/* Function to serve as both an arrival event of a job
 				   to the system, as well as the non-event of a job's
 				   arriving to a subsequent station along its
@@ -327,7 +326,6 @@ int main ()				/* Main function. */
 
   /* Run the simulation until it terminates after an end-simulation event
      (type EVENT_END_SIMULATION) occurs. */
-printf("\naaa\n\n");
   do
     {
 
