@@ -6,75 +6,24 @@
 				   system. */
 #define EVENT_DEPARTURE       2	/* Event type for departure of a job from a
 				   particular station. */
-#define EVENT_END_SIMULATION  3 /* Event type for end of the simulation. */
-#define STREAM_INTERARRIVAL   1 /* Random-number stream for interarrivals. */
-#define STREAM_GROUP_SIZE     2
-#define STREAM_JOB_TYPE       3 /* Random-number stream for job types. */
-#define STREAM_HOTFOOD        4 /* Random-number stream for service times. */
-#define STREAM_SANDWICH       5 /* Random-number stream for service times. */
-#define STREAM_DRINK          6 /* Random-number stream for service times. */
-#define STREAM_HOTFOOD_CT     7 /* Random-number stream for service times. */
-#define STREAM_SANDWICH_CT    8 /* Random-number stream for service times. */
-#define STREAM_DRINK_CT       9 /* Random-number stream for service times. */
-#define MAX_NUM_STATIONS      5 /* Maximum number of stations. */
-#define MAX_NUM_JOB_TYPES     3 /* Maximum number of job types. */
+#define EVENT_END_SIMULATION  3	/* Event type for end of the simulation. */
+#define STREAM_INTERARRIVAL   1	/* Random-number stream for interarrivals. */
+#define STREAM_JOB_TYPE       2	/* Random-number stream for job types. */
+#define STREAM_SERVICE        3	/* Random-number stream for service times. */
+#define MAX_NUM_STATIONS      5	/* Maximum number of stations. */
+#define MAX_NUM_JOB_TYPES     3	/* Maximum number of job types. */
 
 /* Declare non-simlib global variables. */
 
 int num_stations, num_job_types, i, j, num_machines[MAX_NUM_STATIONS + 1],
   num_tasks[MAX_NUM_JOB_TYPES + 1],
-  num_customers,
-  route[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1], num_machines_busy[MAX_NUM_STATIONS + 1], job_type[4], task[4];
+  route[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1], num_machines_busy[MAX_NUM_STATIONS + 1], job_type, task;
 double mean_interarrival, length_simulation, prob_distrib_job_type[26],
   mean_service[MAX_NUM_JOB_TYPES + 1][MAX_NUM_STATIONS + 1],
   mean_accu;
 FILE *infile, *outfile;
 double size_prob[5];
 double ST[4][4], ACT[4][4];
-
-void serve_customer (int customer) {
-  /* Determine the station from the route matrix. */
-  printf("serve customer %d\n", customer);
-  int station = route[job_type[customer]][task[customer]];
-
-  /* Check to see whether all machines in this station are busy. */
-
-  if (num_machines_busy[station] == num_machines[station])
-    {
-
-      /* All machines in this station are busy, so place the arriving job at
-         the end of the appropriate queue. Note that the following data are
-         stored in the record for each job:
-         1. Time of arrival to this station.
-         2. Job type.
-         3. Current task number. */
-      transfer[1] = sim_time;
-      transfer[2] = job_type[customer];
-      transfer[3] = task[customer];
-      list_file (LAST, station);
-    }
-
-  else
-    {
-
-      /* A machine in this station is idle, so start service on the arriving
-         job (which has a delay of zero). */
-    
-      sampst (0.0, station);  /* For station. */
-      sampst (0.0, num_stations + job_type[customer]);  /* For job type. */
-      ++num_machines_busy[station];
-      timest ((double) num_machines_busy[station], station);
-
-      /* Schedule a service completion.  Note defining attributes beyond the
-         first two for the event record before invoking event_schedule. */
-
-      transfer[3] = job_type[customer];
-      transfer[4] = task[customer];
-      transfer[5] = customer;
-      printf("%d\n", customer);
-      event_schedule (sim_time + mean_service[job_type[customer]][task[customer]], EVENT_DEPARTURE);
-    }
-}
 
 void arrive (int new_job)		/* Function to serve as both an arrival event of a job
 				   to the system, as well as the non-event of a job's
@@ -92,34 +41,62 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
     {
 
       event_schedule (sim_time + expon (mean_interarrival, STREAM_INTERARRIVAL), EVENT_ARRIVAL);
-      num_customers = random_integer (size_prob, STREAM_GROUP_SIZE);
-      printf("num cust = %d\n", num_customers);
-      for (int i=0; i<num_customers; i++) {
-        job_type[i] = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
-        task[i] = 1;
-        printf("masuk job : %d, task : %d\n", job_type[i], task[i]);
-      }
+      job_type = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
+      task = 1;
+    }
+  /* Determine the station from the route matrix. */
+
+  station = route[job_type][task];
+
+  /* Check to see whether all machines in this station are busy. */
+
+  if (num_machines_busy[station] == num_machines[station])
+    {
+
+      /* All machines in this station are busy, so place the arriving job at
+         the end of the appropriate queue. Note that the following data are
+         stored in the record for each job:
+         1. Time of arrival to this station.
+         2. Job type.
+         3. Current task number. */
+
+      transfer[1] = sim_time;
+      transfer[2] = job_type;
+      transfer[3] = task;
+      list_file (LAST, station);
     }
 
-  for (int i=0; i<num_customers; i++) {
-    serve_customer(i);
-  }
-  
+  else
+    {
+
+      /* A machine in this station is idle, so start service on the arriving
+         job (which has a delay of zero). */
+
+      sampst (0.0, station);	/* For station. */
+      sampst (0.0, num_stations + job_type);	/* For job type. */
+      ++num_machines_busy[station];
+      timest ((double) num_machines_busy[station], station);
+
+      /* Schedule a service completion.  Note defining attributes beyond the
+         first two for the event record before invoking event_schedule. */
+
+      transfer[3] = job_type;
+      transfer[4] = task;
+      event_schedule (sim_time + uniform (2, mean_service[job_type][task], STREAM_SERVICE), EVENT_DEPARTURE);
+    }
 }
 
 
-void
-depart (void)			/* Event function for departure of a job from a particular
+void depart (void)			/* Event function for departure of a job from a particular
 				   station. */
 {
   int station, job_type_queue, task_queue;
 
   /* Determine the station from which the job is departing. */
-  int customer = transfer[5];
-  job_type[customer] = transfer[3];
-  task[customer] = transfer[4];
 
-  station = route[job_type[customer]][task[customer]];
+  job_type = transfer[3];
+  task = transfer[4];
+  station = route[job_type][task];
 
   /* Check to see whether the queue for this station is empty. */
 
@@ -156,36 +133,35 @@ depart (void)			/* Event function for departure of a job from a particular
 
       transfer[3] = job_type_queue;
       transfer[4] = task_queue;
-      transfer[5] = customer;
-      event_schedule (sim_time + mean_service[job_type_queue][task_queue], EVENT_DEPARTURE);
+      event_schedule (sim_time + uniform (2, mean_service[job_type_queue][task_queue], STREAM_SERVICE), EVENT_DEPARTURE);
     }
 
   /* If the current departing job has one or more tasks yet to be done, send
      the job to the next station on its route. */
 
-  if (task[customer] < num_tasks[job_type[customer]])
+  if (task < num_tasks[job_type])
     {
-      ++task[customer];
-      serve_customer (customer);
+      ++task;
+      arrive (2);
     }
 }
-
 
 void report (void)			/* Report generator function. */
 {
   int i;
-  double overall_avg_job_tot_delay, avg_job_tot_delay, sum_probs;
+  double overall_avg_job_tot_delay, avg_job_tot_delay, sum_probs, max_job_tot_delay;
 
   /* Compute the average total delay in queue for each job type and the
      overall average job total delay. */
 
-  fprintf (outfile, "\n\n\n\nJob type     Average total delay in queue");
+  fprintf (outfile, "\n\n\n\nJob type     Average total delay in queue     Maximum total delay in queue");
   overall_avg_job_tot_delay = 0.0;
   sum_probs = 0.0;
   for (i = 1; i <= num_job_types; ++i)
     {
       avg_job_tot_delay = sampst (0.0, -(num_stations + i)) * num_tasks[i];
-      fprintf (outfile, "\n\n%4d%27.3f", i, avg_job_tot_delay);
+	  max_job_tot_delay = sampst (-999.0, -(num_stations + i)) * num_tasks[i];
+      fprintf (outfile, "\n\n%4d%27.3f%29.3f", i, avg_job_tot_delay/60, max_job_tot_delay/60);
       overall_avg_job_tot_delay += (prob_distrib_job_type[i] - sum_probs) * avg_job_tot_delay;
       sum_probs = prob_distrib_job_type[i];
     }
@@ -198,6 +174,14 @@ void report (void)			/* Report generator function. */
   fprintf (outfile, "\nstation       in queue       utilization        in queue");
   for (j = 1; j <= num_stations; ++j)
     fprintf (outfile, "\n\n%4d%17.3f%17.3f%17.3f", j, filest (j), timest (0.0, -j) / num_machines[j], sampst (0.0, -j));
+	
+  /* Compute the maximum number in queue, the maximum utilization, and the
+     maximum delay in queue for each station. */
+
+  fprintf (outfile, "\n\n\n Work      Maximum number      Maximum       Maximum delay");
+  fprintf (outfile, "\nstation       in queue       utilization        in queue");
+  for (j = 1; j <= num_stations; ++j)
+    fprintf (outfile, "\n\n%4d%17.3f%17.3f%17.3f", j, timest (-999.0, -(TIM_VAR + j)), timest (-999.0, -j) / num_machines[j], sampst (-999.0, -j));
 }
 
 int main ()				/* Main function. */
@@ -257,11 +241,13 @@ int main ()				/* Main function. */
       for (j = 1; j <= (num_tasks[i]-1); ++j)
 		{
 			mean_service[i][j] = (uniform (ST[route[i][j]][1], ST[route[i][j]][2], (route[i][j] + 3)))/60;
-			mean_accu = mean_accu + ((uniform (ACT[route[i][j]][1], ACT[route[i][j]][2], (route[i][j] + 3)))/60);
+			mean_accu = mean_accu + ((uniform (ACT[route[i][j]][1], ACT[route[i][j]][2], (route[i][j] + 6)))/60);
 			printf ("%.3f\n", mean_service[i][j]);
 		}
 		mean_service[i][num_tasks[i]] = mean_accu;
 		printf ("%.3f\n", mean_service[i][num_tasks[i]]);
+		
+		mean_accu = 0;
     }
   for (j = 1; j <= num_stations; ++j)
     {
@@ -314,7 +300,7 @@ int main ()				/* Main function. */
 
   /* Set maxatr = max(maximum number of attributes per record, 4) */
 
-  maxatr = 5;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
+  maxatr = 4;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
 
   /* Schedule the arrival of the first job. */
 
@@ -327,6 +313,7 @@ int main ()				/* Main function. */
 
   /* Run the simulation until it terminates after an end-simulation event
      (type EVENT_END_SIMULATION) occurs. */
+printf("\naaa\n\n");
   do
     {
 
