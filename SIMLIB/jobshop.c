@@ -35,8 +35,9 @@ double ST[4][4], ACT[4][4];
 void serve_customer (int customer) {
   /* Determine the station from the route matrix. */
   printf("serve customer %d\n", customer);
-  int station = route[job_type[customer]][task[customer]];
 
+  int station = route[job_type[customer]][task[customer]];
+  //printf("serve di station %d\n", station);
   /* Check to see whether all machines in this station are busy. */
 
   if (num_machines_busy[station] == num_machines[station])
@@ -71,7 +72,7 @@ void serve_customer (int customer) {
       transfer[3] = job_type[customer];
       transfer[4] = task[customer];
       transfer[5] = customer;
-      printf("%d\n", customer);
+      //printf("%d\n", customer);
       event_schedule (sim_time + mean_service[job_type[customer]][task[customer]], EVENT_DEPARTURE);
     }
 }
@@ -93,15 +94,16 @@ void arrive (int new_job)		/* Function to serve as both an arrival event of a jo
 
       event_schedule (sim_time + expon (mean_interarrival, STREAM_INTERARRIVAL), EVENT_ARRIVAL);
       num_customers = random_integer (size_prob, STREAM_GROUP_SIZE);
-      printf("num cust = %d\n", num_customers);
+      //printf("num cust = %d\n", num_customers);
       for (int i=0; i<num_customers; i++) {
         job_type[i] = random_integer (prob_distrib_job_type, STREAM_JOB_TYPE);
         task[i] = 1;
-        printf("masuk job : %d, task : %d\n", job_type[i], task[i]);
+        //printf("masuk job : %d, task : %d\n", job_type[i], task[i]);
       }
     }
 
   for (int i=0; i<num_customers; i++) {
+    //printf("layanin %d\n", i);
     serve_customer(i);
   }
 }
@@ -264,8 +266,8 @@ int main ()				/* Main function. */
     {
       for (j = 1; j <= (num_tasks[i]-1); ++j)
 		{
-			mean_service[i][j] = (uniform (ST[route[i][j]][1], ST[route[i][j]][2], (route[i][j] + 3)))/60;
-			mean_accu = mean_accu + ((uniform (ACT[route[i][j]][1], ACT[route[i][j]][2], (route[i][j] + 3)))/60);
+			mean_service[i][j] = (uniform (ST[route[i][j]][1], ST[route[i][j]][2], (route[i][j] + 3)))/60.0;
+			mean_accu = mean_accu + ((uniform (ACT[route[i][j]][1], ACT[route[i][j]][2], (route[i][j] + 3)))/60.0);
 			printf ("%.3f\n", mean_service[i][j]);
 		}
 		mean_service[i][num_tasks[i]] = mean_accu;
