@@ -24,7 +24,7 @@ Job type     Work stations on route
    3            3    4
 
 
-Job type     Mean service time (in hours) for successive tasks
+Job type     Mean service time (in minutes) for successive tasks
 
    1         0.74     0.21     0.56
 
@@ -42,7 +42,7 @@ Job type     Average total delay in queue     Maximum total delay in queue
 
    3                      0.003                        0.039
 
-Overall average job total delay =    22.040
+Overall average job total delay =     0.367
 
 
 
@@ -58,13 +58,19 @@ station       in queue       utilization        in queue
    4            0.217            0.676            0.108
 
 
- Work      Maximum number      Maximum       Maximum delay
-station       in queue       utilization        in queue
+ Work      Maximum number       Maximum delay
+station       in queue            in queue
 
-   1          148.000            1.000           48.805
+   1          148.000             48.805
 
-   2           12.000            1.000           18.040
+   2           12.000             18.040
 
-   3            0.000            0.003            0.000
+   3            0.000              0.000
 
-   4            3.000            1.000            1.216
+   4            3.000              1.216
+
+
+ Average number       Maximum number
+    customer             customer
+
+      81.034                163
