@@ -165,7 +165,7 @@ void report (void)			/* Report generator function. */
       overall_avg_job_tot_delay += (prob_distrib_job_type[i] - sum_probs) * avg_job_tot_delay;
       sum_probs = prob_distrib_job_type[i];
     }
-  fprintf (outfile, "\n\nOverall average job total delay =%10.3f\n", overall_avg_job_tot_delay);
+  fprintf (outfile, "\n\nOverall average job total delay =%10.3f\n", overall_avg_job_tot_delay/60);
 
   /* Compute the average number in queue, the average utilization, and the
      average delay in queue for each station. */
@@ -178,10 +178,21 @@ void report (void)			/* Report generator function. */
   /* Compute the maximum number in queue, the maximum utilization, and the
      maximum delay in queue for each station. */
 
-  fprintf (outfile, "\n\n\n Work      Maximum number      Maximum       Maximum delay");
-  fprintf (outfile, "\nstation       in queue       utilization        in queue");
+  fprintf (outfile, "\n\n\n Work      Maximum number       Maximum delay");
+  fprintf (outfile, "\nstation       in queue            in queue");
   for (j = 1; j <= num_stations; ++j)
-    fprintf (outfile, "\n\n%4d%17.3f%17.3f%17.3f", j, timest (-999.0, -(TIM_VAR + j)), timest (-999.0, -j) / num_machines[j], sampst (-999.0, -j));
+    fprintf (outfile, "\n\n%4d%17.3f%19.3f", j, timest (-999.0, -(TIM_VAR + j)),  sampst (-999.0, -j));
+	
+  fprintf (outfile, "\n\n\n Average number       Maximum number");
+  fprintf (outfile, "\n    customer             customer");
+  double avg_cust = 0;
+  int max_cust = 0;
+  for (j = 1; j <= num_stations; ++j)
+  {
+    avg_cust += filest(j);
+	max_cust += timest (-999.0, -(TIM_VAR + j));
+  }
+  fprintf (outfile, "\n\n      %4.3f%19d", avg_cust, max_cust);
 }
 
 int main ()				/* Main function. */
@@ -279,7 +290,7 @@ int main ()				/* Main function. */
 	fprintf (outfile, "%5d", route[i][j]);
     }
   fprintf (outfile, "\n\n\nJob type     ");
-  fprintf (outfile, "Mean service time (in hours) for successive tasks");
+  fprintf (outfile, "Mean service time (in minutes) for successive tasks");
   for (i = 1; i <= num_job_types; ++i)
     {
       fprintf (outfile, "\n\n%4d    ", i);
@@ -313,7 +324,6 @@ int main ()				/* Main function. */
 
   /* Run the simulation until it terminates after an end-simulation event
      (type EVENT_END_SIMULATION) occurs. */
-printf("\naaa\n\n");
   do
     {
 
